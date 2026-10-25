@@ -8,8 +8,8 @@ A self-contained page in `showcase/` summarises the most important findings with
 It needs nothing but Python 3 (no packages):
 
 ```bash
-git clone <this repository's URL>
-cd <repository folder>
+git clone https://github.com/zappy586/dcase-experiments.git
+cd dcase-experiments
 python -m http.server 8000 --directory showcase
 ```
 
