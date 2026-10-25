@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Experiment artefacts
+data/
+cache/
+outputs/
+
+# Downloaded pretrained weights
+pretrained/
+listening_test/
+envs/
+
+# Large or external material (not part of the repository)
+dataset/
+data_ext/
+cache_noswap/
+third_party/
+.claude/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.wav
+*.zip
+*.out
+!showcase/**
+*.log

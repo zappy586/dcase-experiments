@@ -1,0 +1,72 @@
+# End-to-end transformer autoencoder baseline. The SAME settings are used for every machine type.
+# Encoder: ViT over 16x16 mel patches. Bottleneck: mean-pool over time -> (n_freq_patches x D).
+# Decoder: transformer decoder cross-attending ONLY to the pooled vectors.
+# Score: plain mean squared reconstruction error of the clip. Result: metrics at the last step.
+name: baseline
+seed: 0
+device: cuda
+
+data:
+  machine: fan            # any top-level folder in the zips: fan, ToyCar, ToyCarEmu, bearingEmu, ...
+  zip_dir: dataset
+  data_root: data
+  cache_dir: cache
+  val_split: test         # labelled split used for evaluation (DCASE dev has no separate val set)
+  batch_size: 32
+  num_workers: 0
+
+audio:
+  sample_rate: 16000
+  channels: mean          # mean | left (near mic) | stack (2 input channels)
+  n_fft: 1024
+  hop_length: 500         # 10 s @ 16 kHz -> 321 frames, cropped to n_frames
+  n_mels: 128
+  n_frames: 320           # 20 time patches of 16
+  fmin: 0
+  fmax: null
+  norm: global            # global (scalar mean/std) | per_bin
+
+model:
+  patch_size: [16, 16]    # (freq, time)
+  target_pool: [1, 1]     # decoder reconstructs x average-pooled by (freq, time); [1, 1] = full resolution
+  encoder:
+    name: vit
+    dim: 256
+    depth: 6
+    heads: 8
+    mlp_ratio: 4
+    dropout: 0.0
+  bottleneck:
+    name: mean_time       # mean_time -> (n_freq_patches, D) | none -> all tokens (sanity baseline)
+    dim: 256
+  decoder:
+    name: transformer
+    dim: 256
+    depth: 4
+    heads: 8
+    mlp_ratio: 4
+    dropout: 0.0
+
+train:
+  steps: 5000
+  lr: 3.0e-4
+  min_lr: 1.0e-6
+  weight_decay: 0.05
+  warmup_steps: 500
+  grad_clip: 1.0
+  amp: true
+  log_every: 10
+
+eval:
+  every: 1000             # evaluate + save reconstructions every N steps
+  at_start: true
+  batch_size: 100
+  score: mean             # mean | max_patch | top10 (reported as the headline; no checkpoint selection)
+  pauc_max_fpr: 0.1
+
+vis:
+  n_samples: 8
+  err_vmax: null          # colour scale of the error heatmap (null = auto per step)
+
+output:
+  dir: outputs

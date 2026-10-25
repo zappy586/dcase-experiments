@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listening Test</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --line: #e3e3de;
+    --accent: #2f5fd0; --ok: #1f8a4c; --bad: #c43d3d; --anom: #b4570f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161615; --card: #1f1f1d; --text: #ecece8; --muted: #9a9a93; --line: #33332f;
+            --accent: #7c9cf0; --ok: #4cc27f; --bad: #ef7070; --anom: #f0a35e; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  p.lead { color: var(--muted); margin: 0 0 18px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tab { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px;
+         padding: 6px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+  .tab.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .tab .badge { color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .card .hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .row { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .lbl { font-weight: 600; font-size: 14px; }
+  audio { width: 100%; height: 34px; }
+  .choice { display: flex; gap: 6px; }
+  .choice button { border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 8px;
+                   padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; min-width: 76px; }
+  .choice button.sel-0 { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .choice button.sel-1 { background: var(--anom); border-color: var(--anom); color: #fff; }
+  .choice button:disabled { cursor: default; opacity: .85; }
+  .verdict { grid-column: 2 / 4; font-size: 13px; }
+  .verdict.ok { color: var(--ok); } .verdict.bad { color: var(--bad); }
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .primary { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  .primary:disabled { opacity: .45; cursor: default; }
+  .score { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .small { color: var(--muted); font-size: 13px; }
+  .linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
+  @media (max-width: 560px) { .row { grid-template-columns: 1fr; } .verdict { grid-column: 1; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Listening test</h1>
+  <p class="lead">For each machine: listen to the 5 normal references, then mark each of the 10 test clips as normal or anomaly
+    (5 of each, shuffled). All clips are source domain, near mic, original level. Press <b>Check</b> when all 10 are marked.</p>
+  <div class="tabs" id="tabs"></div>
+  <section id="panel"></section>
+  <section class="card" id="summary">
+    <h2>Results so far</h2>
+    <table id="sumtable"></table>
+    <p class="small">Guessing gets 5 of 10 on average; 8 or more of 10 on one machine happens by luck about 5–10% of the time; 10 of 10 well under 1%.
+      <button class="linkbtn" id="reset">Reset all answers</button></p>
+  </section>
+</main>
+<script>
+const DATA = __DATA__;
+const KEY = JSON.parse(atob("__KEY__"));
+const STORE = "listening-test-v1";
+let state = { active: DATA.machines[0].machine, answers: {}, checked: {} };
+try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.answers) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+
+document.addEventListener("play", e => {
+  document.querySelectorAll("audio").forEach(a => { if (a !== e.target) a.pause(); });
+}, true);
+
+function results() {
+  return DATA.machines.map(m => {
+    const ans = state.answers[m.machine] || [];
+    const done = state.checked[m.machine];
+    const correct = done ? KEY[m.machine].filter((t, i) => ans[i] === t).length : null;
+    return { machine: m.machine, marked: ans.filter(v => v === 0 || v === 1).length, checked: !!done, correct };
+  });
+}
+window.listeningResults = results;
+
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = "";
+  results().forEach(r => {
+    const b = document.createElement("button");
+    b.className = "tab" + (r.machine === state.active ? " active" : "");
+    b.innerHTML = `${r.machine}<span class="badge">${r.checked ? r.correct + "/10" : r.marked + "/10 marked"}</span>`;
+    b.onclick = () => { state.active = r.machine; save(); render(); };
+    el.appendChild(b);
+  });
+}
+
+function renderPanel() {
+  const m = DATA.machines.find(x => x.machine === state.active);
+  const ans = state.answers[m.machine] || (state.answers[m.machine] = Array(m.tests.length).fill(null));
+  const done = !!state.checked[m.machine];
+  const truth = KEY[m.machine];
+  const panel = document.getElementById("panel");
+  panel.innerHTML = `
+    <div class="card"><h2>${m.machine}: normal references</h2>
+      <p class="hint">These 5 are all normal. Listen to get a feel for the machine.</p>
+      ${m.refs.map((f, i) => `<div class="row"><span class="lbl">Ref ${i + 1}</span>
+        <audio controls preload="none" src="audio/${f}"></audio><span></span></div>`).join("")}
+    </div>
+    <div class="card"><h2>${m.machine}: test clips</h2>
+      <p class="hint">5 normal and 5 anomalous, in random order.</p>
+      <div id="tests"></div>
+      <div class="actions">
+        <button class="primary" id="check">Check ${m.machine}</button>
+        <span class="score" id="score"></span>
+      </div>
+    </div>`;
+  const tests = panel.querySelector("#tests");
+  m.tests.forEach((f, i) => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `<span class="lbl">Clip ${i + 1}</span><audio controls preload="none" src="audio/${f}"></audio>
+      <div class="choice"><button data-v="0">Normal</button><button data-v="1">Anomaly</button></div>`;
+    row.querySelectorAll(".choice button").forEach(b => {
+      const v = +b.dataset.v;
+      if (ans[i] === v) b.classList.add("sel-" + v);
+      b.disabled = done;
+      b.onclick = () => {  // update in place so a playing clip isn't interrupted
+        ans[i] = v; save();
+        row.querySelectorAll(".choice button").forEach(x => x.className = "");
+        b.classList.add("sel-" + v);
+        updateBtn(); renderTabs();
+      };
+    });
+    if (done) {
+      const ok = ans[i] === truth[i];
+      const v = document.createElement("div");
+      v.className = "verdict " + (ok ? "ok" : "bad");
+      v.textContent = (ok ? "Correct" : "Wrong") + ": this clip is " + (truth[i] ? "an anomaly" : "normal");
+      row.appendChild(v);
+    }
+    tests.appendChild(row);
+  });
+  const btn = panel.querySelector("#check");
+  function updateBtn() {
+    const allMarked = ans.every(v => v === 0 || v === 1);
+    btn.disabled = done || !allMarked;
+    btn.textContent = allMarked || done ? `Check ${m.machine}` : `Mark all 10 to check (${ans.filter(v => v !== null).length}/10)`;
+  }
+  updateBtn();
+  btn.onclick = () => { state.checked[m.machine] = true; save(); render(); };
+  if (done) panel.querySelector("#score").textContent =
+    `${truth.filter((t, i) => ans[i] === t).length} / 10 correct`;
+}
+
+function renderSummary() {
+  const rs = results();
+  const checked = rs.filter(r => r.checked);
+  const tot = checked.reduce((a, r) => a + r.correct, 0);
+  document.getElementById("sumtable").innerHTML =
+    `<tr><th>Machine</th><th class="num">Correct</th></tr>` +
+    rs.map(r => `<tr><td>${r.machine}</td><td class="num">${r.checked ? r.correct + " / 10" : "–"}</td></tr>`).join("") +
+    `<tr><th>Total</th><th class="num">${checked.length ? tot + " / " + checked.length * 10 : "–"}</th></tr>`;
+}
+
+function render() { renderTabs(); renderPanel(); renderSummary(); }
+document.getElementById("reset").onclick = () => {
+  if (confirm("Clear all answers?")) { state = { active: DATA.machines[0].machine, answers: {}, checked: {} }; save(); render(); }
+};
+render();
+</script>
+</body>
+</html>

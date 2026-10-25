@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noise-Aware Machine Sound</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f7f5; --card: #ffffff; --text: #16181d; --text-2: #4b4f58; --muted: #767b85; --line: #e4e5e8;
+    --accent: #2a78d6; --accent-soft: #e9f1fc; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --ref: #a3a7af;
+    --good: #0f8a5f; --bad: #c2410c; --shadow: 0 1px 2px rgba(20, 24, 33, .05), 0 4px 16px rgba(20, 24, 33, .04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+      --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+      --good: #34c08a; --bad: #f08a5d; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+    --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+    --good: #34c08a; --bad: #f08a5d; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.hero { padding: 64px 0 36px; }
+  .eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; margin: 10px 0 14px; letter-spacing: -.02em; }
+  .lede { font-size: 18px; color: var(--text-2); max-width: 760px; margin: 0; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 22px; overflow-x: auto; padding-top: 12px; padding-bottom: 12px; scrollbar-width: none; }
+  nav.toc a { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; font-weight: 500; }
+  nav.toc a:hover { color: var(--text); }
+  .theme { margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+  section { padding: 56px 0 8px; scroll-margin-top: 48px; }
+  h2 { font-size: 28px; letter-spacing: -.015em; margin: 0 0 6px; }
+  .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .sub { color: var(--text-2); margin: 0 0 24px; max-width: 780px; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); min-width: 0; }
+  .card p { margin: 0; color: var(--text-2); font-size: 15px; }
+  .stat .v { font-size: 34px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .k { color: var(--text-2); font-size: 14px; margin-top: 4px; }
+  .stat .d { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; background: var(--accent-soft); color: var(--accent); margin-bottom: 10px; }
+  .clip { padding: 14px; }
+  .clip .t { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .clip .c { color: var(--muted); font-size: 13px; margin-bottom: 8px; min-height: 20px; }
+  .clip img { width: 100%; border-radius: 8px; display: block; background: #000; }
+  .clip audio { width: 100%; height: 34px; margin-top: 8px; }
+  .figure img.arch { width: 100%; border-radius: 10px; display: block; background: #fff; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chart { width: 100%; }
+  .chart text { fill: var(--text-2); font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .chart .axis { stroke: var(--line); }
+  .chart .grid line { stroke: var(--line); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin: 4px 0 8px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .take { display: flex; gap: 14px; align-items: flex-start; }
+  .take b { font-size: 22px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .note { font-size: 13px; color: var(--muted); }
+  .up { color: var(--good); font-weight: 600; }
+  .down { color: var(--bad); font-weight: 600; }
+  footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } .g2, .g3, .g4 { grid-template-columns: 1fr; } header.hero { padding-top: 40px; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">DCASE 2026 Challenge · Task 2</div>
+    <h1>Detecting machine faults by ear, in a noisy factory</h1>
+    <p class="lede">Unsupervised anomalous sound detection with two microphones: we learn what a healthy machine sounds like
+      from normal recordings only, then flag sounds that don't fit. This page summarises what worked, what didn't, and why.</p>
+  </div>
+</header>
+<nav class="toc"><div class="wrap">
+  <a href="#task">1 · Task</a><a href="#idea">2 · Key idea</a><a href="#model">3 · Model &amp; results</a>
+  <a href="#findings">4 · What we learned</a><a href="#domain">5 · Best lead</a><a href="#gen">6 · Generating machine sound</a>
+  <a href="#next">7 · Takeaways</a><button class="theme" id="theme" type="button">Theme</button>
+</div></nav>
+<main class="wrap">
+
+<section id="task">
+  <h2><span class="num">1</span>The task</h2>
+  <p class="sub">Every clip has two microphones: one next to the machine, one farther away that hears more factory noise.
+    Models may only train on normal sounds, and the evaluation machines are unseen during development.</p>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">2</div><div class="k">microphones per clip</div><div class="d">near + far, 16 kHz, ~10 s</div></div>
+    <div class="card stat"><div class="v">990 / 10</div><div class="k">training clips per machine</div><div class="d">source domain / target domain (new conditions)</div></div>
+    <div class="card stat"><div class="v">7 + 5</div><div class="k">machine types</div><div class="d">development / evaluation (different machines)</div></div>
+    <div class="card stat"><div class="v">Ω</div><div class="k">official score</div><div class="d">harmonic mean of source AUC, target AUC and pAUC (FPR ≤ 0.1)</div></div>
+  </div>
+</section>
+
+<section id="idea">
+  <h2><span class="num">2</span>Key idea: subtract the far microphone</h2>
+  <p class="sub">The far mic hears mostly the factory. For every frequency we find how the far-mic signal shows up in the
+    near mic (one least-squares gain per frequency, per clip) and subtract it. What's left is mostly the machine itself.</p>
+  <div class="grid g3">
+    <div class="card clip"><div class="t">Near mic</div><div class="c">fan, normal · machine + factory</div>
+      <img src="assets/img/fan_normal_near.png" alt="Spectrogram of the near microphone"><audio controls preload="none" src="assets/audio/fan_normal_near.wav"></audio></div>
+    <div class="card clip"><div class="t">Far mic</div><div class="c">same moment · mostly factory</div>
+      <img src="assets/img/fan_normal_far.png" alt="Spectrogram of the far microphone"><audio controls preload="none" src="assets/audio/fan_normal_far.wav"></audio></div>
+    <div class="card clip"><div class="t">Near minus far</div><div class="c">mostly the machine's own sound</div>
+      <img src="assets/img/fan_normal_nmf.png" alt="Spectrogram of the near-minus-far signal"><audio controls preload="none" src="assets/audio/fan_normal_nmf.wav"></audio></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card stat"><div class="v">0.616 · 0.631 · <span style="color:var(--accent)">0.686</span></div>
+      <div class="k">development Ω, 7 machines, same detector</div>
+      <div class="d">input = mono mix · near mic only · <strong>near minus far</strong> (a simple spectrum detector whose settings were
+        chosen on development labels, so absolute values are optimistic; the ranking is the point)</div></div>
+    <div class="card"><p>All clips on this page are loudness-normalised for listening. The same subtraction is used everywhere below:
+      as the autoencoder's target, as input to pretrained encoders, and as training audio for the generator.</p></div>
+  </div>
+</section>
+
+<section id="model">
+  <h2><span class="num">3</span>Our model: a noise-aware autoencoder</h2>
+  <p class="sub">The encoder sees both microphones (with extra background mixed in during training, so it learns to ignore noise)
+    and squeezes the clip into 32 numbers. The decoder must predict the clip's averaged near-minus-far spectrum.
+    The anomaly score is how far that prediction misses. ~0.7 M parameters, trained from scratch on all 1,000 normal clips.</p>
+  <div class="card figure"><img class="arch" src="assets/img/architecture.png" alt="Architecture: two-microphone spectrogram, conv encoder, 32-number code, MLP decoder predicting the 256-band machine spectrum; the squared gap is the loss and anomaly score">
+    <div class="caption">Dashed boxes: extra background mixing (used) and synthetic target-domain samples (tried, did not help).</div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Development set (Ω per machine)</h3><div class="note">Same settings for every machine; no tuning on test labels.</div>
+      <svg class="chart" id="devChart" role="img" aria-label="Development score per machine"></svg></div>
+    <div class="card"><h3>Evaluation set (official score, %)</h3><div class="note">Five unseen machines, scored by the official evaluator.</div>
+      <svg class="chart" id="evalChart" role="img" aria-label="Evaluation score compared with the baseline and the winner"></svg>
+      <div class="caption">The evaluation clips don't say which channel is the near mic; our louder-channel rule picked wrong for 3 of 5
+        machines, costing 1.5 points (58.1 → 59.6 with the right order).</div></div>
+  </div>
+</section>
+
+<section id="findings">
+  <h2><span class="num">4</span>What the data told us</h2>
+  <p class="sub">Each idea was first tested with a quick probe (seconds to minutes) on all development machines. The ones below
+    shaped the direction most.</p>
+  <div class="grid g2">
+    <div class="card"><span class="pill">Faults are global</span><h3>Machine faults change the whole clip, not a moment of it</h3>
+      <p>Scoring each clip against its own typical frame is at chance (Ω 0.48), so faults aren't local events. That is why
+        image anomaly-detection methods built on local defects fail here: a Dinomaly-style reconstructor scored 0.49 / 0.53.</p></div>
+    <div class="card"><span class="pill">Weak spot: target domain</span><h3>Only 10 clips of the new condition</h3>
+      <p>On fan, the autoencoder separates source-domain faults almost perfectly (AUC 0.92) but is at chance on the target
+        domain (0.49). The shared model is fitted to the 990 source clips; the 10 target clips get squeezed out.</p></div>
+    <div class="card"><span class="pill">Not the bottleneck</span><h3>Memorisation and model size</h3>
+      <p>Random crops halved how much the model memorises its training clips (gap ratio 8.5× → 4.2×) with no change in score.
+        A 40× larger autoencoder and a frozen AudioSet ConvNeXt gave at most +2 points on one machine.</p></div>
+    <div class="card"><span class="pill">Codecs hear the room</span><h3>Neural-codec tokens encode conditions, not faults</h3>
+      <p>In EnCodec's coarsest codebook, source and target normals use 45% different codes; normal vs faulty clips differ by
+        only 7%, close to random splits (5%). A kNN on EnCodec embeddings ties our autoencoder (0.610 vs 0.613, ToyCar).</p></div>
+  </div>
+</section>
+
+<section id="domain">
+  <h2><span class="num">5</span>Most promising lead: a target-domain expert</h2>
+  <p class="sub">Keep the shared model, add a small low-rank expert learned from the 10 target clips, and score each test clip by
+    whichever explains it better. A fault fits neither, and no test-domain labels are needed.</p>
+  <div class="grid g2">
+    <div class="card"><h3>Linear check, all 7 machines (Ω)</h3>
+      <div class="legend"><span><i style="background:var(--ref)"></i>one shared model</span><span><i style="background:var(--s1)"></i>+ target-domain expert</span></div>
+      <svg class="chart" id="expertChart" role="img" aria-label="Score per machine with and without the target-domain expert"></svg>
+      <div class="caption">Mean Ω 0.624 → 0.684; mean target AUC 0.62 → 0.76. Improves 6 of 7 machines.</div></div>
+    <div class="card"><h3>Inside the autoencoder (LoRA expert on the decoder)</h3>
+      <table>
+        <tr><th>machine</th><th class="r">shared AE</th><th class="r">+ expert</th></tr>
+        <tr><td>fan</td><td class="r">0.570</td><td class="r"><span class="up">0.671</span></td></tr>
+        <tr><td>gearboxEmu</td><td class="r">0.657</td><td class="r">0.646</td></tr>
+        <tr><td>ToyCar</td><td class="r">0.613</td><td class="r">0.613</td></tr>
+      </table>
+      <p class="note" style="margin-top:12px">+10 points on fan, rescoring a saved model in 90 s. On gearboxEmu and ToyCar the two experts' errors
+        aren't on the same scale yet: the shared model's scale comes from clips it memorised. Open item: measure it on unseen clips.</p></div>
+  </div>
+</section>
+
+<section id="gen">
+  <h2><span class="num">6</span>Generating machine sound with AudioGen</h2>
+  <p class="sub">We taught Meta's AudioGen (1.5 B) what a normal ToyCar sounds like: a new word <code>[toycar]</code> plus LoRA
+    (16.5 M parameters) on 1,000 normal clips. Then we asked it for faults in plain words. Listen and compare.</p>
+  <div class="grid g3">
+    <div class="card clip"><div class="t">Real · normal</div><div class="c">ToyCar test clip</div>
+      <img src="assets/img/toycar_real_normal.png" alt="Real normal ToyCar"><audio controls preload="none" src="assets/audio/toycar_real_normal.wav"></audio></div>
+    <div class="card clip"><div class="t">Real · faulty</div><div class="c">ToyCar test clip</div>
+      <img src="assets/img/toycar_real_anomaly.png" alt="Real faulty ToyCar"><audio controls preload="none" src="assets/audio/toycar_real_anomaly.wav"></audio></div>
+    <div class="card clip"><div class="t">Generated · "the sound of [toycar]"</div><div class="c">LoRA trained on full 10 s clips</div>
+      <img src="assets/img/gen_normal_full10.png" alt="Generated normal ToyCar, 10 seconds"><audio controls preload="none" src="assets/audio/gen_normal_full10.wav"></audio></div>
+    <div class="card clip"><div class="t">Generated · "faint intermittent rattle"</div><div class="c">"a [toycar] with a faint intermittent rattle"</div>
+      <img src="assets/img/gen_rattle_5s.png" alt="Generated ToyCar with rattle"><audio controls preload="none" src="assets/audio/gen_rattle_5s.wav"></audio></div>
+    <div class="card clip"><div class="t">Generated · "slightly worn, grinding gear"</div><div class="c">"a [toycar] with a slightly worn, grinding gear"</div>
+      <img src="assets/img/gen_grinding_5s.png" alt="Generated ToyCar with worn gear"><audio controls preload="none" src="assets/audio/gen_grinding_5s.wav"></audio></div>
+    <div class="card clip"><div class="t">Real opening + generated rest</div><div class="c">0–2 s real normal clip, then AudioGen continues</div>
+      <img src="assets/img/gen_opening_normal.png" alt="Real opening followed by generated continuation"><audio controls preload="none" src="assets/audio/gen_opening_normal.wav"></audio></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Training on whole clips teaches the recording's shape</h3>
+      <div class="legend"><span><i style="background:var(--ref)"></i>real clips</span><span><i style="background:var(--s2)"></i>LoRA on 5 s crops</span><span><i style="background:var(--s1)"></i>LoRA on full 10 s clips</span></div>
+      <svg class="chart" id="shapeChart" role="img" aria-label="Average loudness per second for real and generated clips"></svg>
+      <div class="caption">Average loudness per second (dB). Real recordings fade in and out; the 5 s model drifts after 5 s.</div></div>
+    <div class="card"><h3>How close is "close"?</h3>
+      <table>
+        <tr><th>check</th><th class="r">result</th></tr>
+        <tr><td>Fault prompts lean towards real faults<div class="note">share called faulty by a classifier trained on real clips: normal prompt → rattle prompt</div></td><td class="r">45% → 65%</td></tr>
+        <tr><td>Generated clips still recognisable as generated<div class="note">AUC real vs generated (0.5 = identical): without → with a real 2 s opening</div></td><td class="r">0.96 → 0.91</td></tr>
+        <tr><td>AudioGen's codec alone erases fault detail<div class="note">real faults vs normals in BEATs space, AUC before → after the codec</div></td><td class="r"><span class="down">0.87 → 0.66</span></td></tr>
+        <tr><td>Train on generated faults, test on real ones<div class="note">AUC on real clips; 0.5 = chance</div></td><td class="r">0.46–0.56</td></tr>
+      </table></div>
+  </div>
+</section>
+
+<section id="next">
+  <h2><span class="num">7</span>Takeaways</h2>
+  <div class="grid g3">
+    <div class="card take"><b>1</b><p><strong>Use the second microphone directly.</strong> Subtracting the far mic is the single biggest gain;
+      most of the noise problem is solved before any learning.</p></div>
+    <div class="card take"><b>2</b><p><strong>The target domain is the bottleneck.</strong> A small expert for the 10 target clips is the
+      clearest lead (+6 points linear, +10 on fan); next step is putting both experts on one scale.</p></div>
+    <div class="card take"><b>3</b><p><strong>Generators get the gist, not the fault.</strong> AudioGen + LoRA reproduces ToyCar's tone
+      and structure, but its codec drops the fine detail where real faults live.</p></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">Scores: development set unless stated; Ω = harmonic mean of AUC source, AUC target and pAUC (p = 0.1).
+  Evaluation scores from the official DCASE 2026 Task 2 evaluator. Code and scripts are in this repository.</div></footer>
+
+<script>
+(function () {
+  const root = document.documentElement;
+  const btn = document.getElementById("theme");
+  try { const t = localStorage.getItem("showcase-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  btn.onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("showcase-theme", root.dataset.theme); } catch (e) {}
+  };
+
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
+  const W = 480;
+
+  // horizontal bars; rows: [label, [{v, color, tip}]]
+  function hbars(id, rows, { min = 0, max = 1, ticks = [], fmt = v => v.toFixed(3), tf = v => String(v), lab = 104, bh = 14, gap = 3 } = {}) {
+    const svg = document.getElementById(id);
+    const per = rows[0][1].length, rowH = per * bh + (per - 1) * gap + 14, top = 6, H = top + rows.length * rowH + 22;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const x0 = lab, x1 = W - 48, sx = v => x0 + (v - min) / (max - min) * (x1 - x0);
+    const g = el("g", { class: "grid" }, svg);
+    ticks.forEach(t => { el("line", { x1: sx(t), x2: sx(t), y1: top - 2, y2: H - 20 }, g); el("text", { x: sx(t), y: H - 6, "text-anchor": "middle" }, svg, tf(t)); });
+    rows.forEach(([label, bars], i) => {
+      const y = top + i * rowH;
+      el("text", { x: x0 - 8, y: y + (per * bh + (per - 1) * gap) / 2 + 4, "text-anchor": "end" }, svg, label);
+      bars.forEach((b, j) => {
+        const by = y + j * (bh + gap), w = Math.max(2, sx(b.v) - x0);
+        const r = el("rect", { x: x0, y: by, width: w, height: bh, rx: 4, fill: b.color }, svg);
+        el("title", {}, r, b.tip || `${label}: ${fmt(b.v)}`);
+        el("text", { x: x0 + w + 6, y: by + bh - 3 }, svg, fmt(b.v));
+      });
+    });
+  }
+  const css = v => `var(${v})`;
+  const dev = [["ToyCar", .613], ["ToyCarEmu", .638], ["bearingEmu", .573], ["fan", .595], ["gearboxEmu", .657], ["sliderEmu", .607], ["valveEmu", .875]];
+  hbars("devChart", dev.map(([m, v]) => [m, [{ v, color: css("--s1") }]]), { min: .5, max: .9, ticks: [.5, .6, .7, .8, .9] });
+  hbars("evalChart", [
+    ["Ours", [{ v: 58.09, color: css("--s1"), tip: "Ours (mean gap): 58.09" }]],
+    ["Ours, right mics", [{ v: 59.60, color: css("--s1"), tip: "Ours with the correct microphone order: 59.60" }]],
+    ["Official baseline", [{ v: 59.80, color: css("--ref"), tip: "Official MSE baseline: 59.80" }]],
+    ["Winner (MERL)", [{ v: 70.24, color: css("--ref"), tip: "Challenge winner, MERL: 70.24" }]],
+  ], { min: 50, max: 75, ticks: [50, 55, 60, 65, 70, 75], fmt: v => v.toFixed(1), lab: 130, bh: 18 });
+  const ex = [["ToyCar", .592, .572], ["ToyCarEmu", .540, .576], ["bearingEmu", .575, .599], ["fan", .571, .754],
+              ["gearboxEmu", .654, .781], ["sliderEmu", .593, .632], ["valveEmu", .842, .872]];
+  hbars("expertChart", ex.map(([m, a, b]) => [m, [{ v: a, color: css("--ref"), tip: `${m}, one shared model: ${a.toFixed(3)}` },
+                                                     { v: b, color: css("--s1"), tip: `${m}, with target-domain expert: ${b.toFixed(3)}` }]]),
+    { min: .5, max: .9, ticks: [.5, .6, .7, .8, .9], bh: 13, gap: 5 });
+
+  // line chart: loudness per second
+  (function () {
+    const svg = document.getElementById("shapeChart"), H = 230, x0 = 40, x1 = W - 16, y0 = 12, y1 = H - 30;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const series = [
+      ["real clips", css("--ref"), [-7.8, 0.8, 1.9, 2.1, 2.2, 2.3, 2.4, 2.4, -0.3, -10.3]],
+      ["5 s LoRA", css("--s2"), [4.3, 5.5, 5.8, 5.6, 3.3, -2.2, -4.1, -4.3, -5.9, -6.7]],
+      ["10 s LoRA", css("--s1"), [-6.7, 2.9, 4.4, 4.6, 4.5, 4.7, 4.5, 4.6, 1.4, -9.3]],
+    ];
+    const sx = i => x0 + (i + .5) / 10 * (x1 - x0), sy = v => y0 + (8 - v) / 20 * (y1 - y0);
+    const g = el("g", { class: "grid" }, svg);
+    [-12, -8, -4, 0, 4, 8].forEach(t => { el("line", { x1: x0, x2: x1, y1: sy(t), y2: sy(t) }, g); el("text", { x: x0 - 6, y: sy(t) + 4, "text-anchor": "end" }, svg, t); });
+    [0, 2, 4, 6, 8, 10].forEach(t => el("text", { x: x0 + t / 10 * (x1 - x0), y: H - 10, "text-anchor": "middle" }, svg, t + " s"));
+    series.forEach(([name, color, v]) => {
+      el("path", { d: v.map((y, i) => `${i ? "L" : "M"}${sx(i)},${sy(y)}`).join(""), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+      v.forEach((y, i) => { const c = el("circle", { cx: sx(i), cy: sy(y), r: 4, fill: color, stroke: "var(--card)", "stroke-width": 2 }, svg);
+        el("title", {}, c, `${name}, ${i}-${i + 1} s: ${y.toFixed(1)} dB`); });
+    });
+  })();
+})();
+</script>
+</body>
+</html>

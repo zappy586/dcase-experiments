@@ -1,0 +1,7 @@
+https://zenodo.org/records/19336329/files/dev_bearingEmu.zip?download=1
+https://zenodo.org/records/19336329/files/dev_fan.zip?download=1
+https://zenodo.org/records/19336329/files/dev_gearboxEmu.zip?download=1
+https://zenodo.org/records/19336329/files/dev_sliderEmu.zip?download=1
+https://zenodo.org/records/19336329/files/dev_ToyCar_r2.zip?download=1
+https://zenodo.org/records/19336329/files/dev_ToyCarEmu.zip?download=1
+https://zenodo.org/records/19336329/files/dev_valveEmu.zip?download=1

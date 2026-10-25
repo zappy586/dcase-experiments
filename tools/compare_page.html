@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Separation Comparison</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --text:#1d1d1b; --muted:#6b6b66; --line:#e3e3de; --accent:#2f5fd0; --anom:#b4570f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161615; --card:#1f1f1d; --text:#ecece8; --muted:#9a9a93; --line:#33332f; --accent:#7c9cf0; --anom:#f0a35e; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:1500px; margin:0 auto; padding:18px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .bar { display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:12px 0 16px; }
+  .bar label { font-size:13px; }
+  select { font:inherit; padding:3px 6px; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { border:1px solid var(--line); border-radius:999px; padding:3px 10px; cursor:pointer; user-select:none; font-size:13px; }
+  .chip.on { border-color:var(--accent); color:var(--accent); font-weight:600; }
+  .clip { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:10px 0; }
+  .head { margin-bottom:6px; }
+  .tag { font-weight:700; } .tag.normal { color:var(--accent); } .tag.anomaly { color:var(--anom); }
+  .row { display:grid; gap:10px; align-items:start; margin:6px 0; }
+  .mic { font-weight:600; font-size:12px; color:var(--muted); writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; }
+  .cell img { width:100%; display:block; border-radius:4px; }
+  .cell audio { width:100%; height:30px; margin-top:4px; }
+  .cell .cap { font-size:12px; margin-bottom:2px; }
+  .cell .note { font-size:11px; color:var(--muted); }
+  .empty { color:var(--muted); font-size:12px; padding:20px 0; text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Separation comparison</h1>
+  <div class="muted" id="sub">Reads manifest.json; every variant added by the script appears as a column.</div>
+  <div class="bar">
+    <label>Machine <select id="machine"></select></label>
+    <label>Mic <select id="mic"></select></label>
+    <label>Label <select id="label"><option value="">all</option><option>normal</option><option>anomaly</option></select></label>
+    <div class="chips" id="variants"></div>
+  </div>
+  <div id="list"></div>
+</main>
+<script>
+const KEY = "sep-compare-ui";
+let ui = {};
+try { ui = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ui)); } catch (e) {} };
+const uniq = a => [...new Set(a)];
+
+fetch("manifest.json?" + Date.now()).then(r => r.json()).then(m => {
+  const items = m.items;
+  document.getElementById("sub").textContent = m.description || document.getElementById("sub").textContent;
+  const variants = uniq(items.map(i => i.variant));
+  ui.hidden = ui.hidden || [];
+  const fill = (id, values, allLabel) => {
+    const s = document.getElementById(id);
+    s.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option>${v}</option>`).join("");
+    s.value = ui[id] || "";
+    s.onchange = () => { ui[id] = s.value; save(); render(); };
+  };
+  fill("machine", uniq(items.map(i => i.machine)), "all");
+  fill("mic", uniq(items.map(i => i.mic)), "all");
+  const lab = document.getElementById("label");
+  lab.value = ui.label || ""; lab.onchange = () => { ui.label = lab.value; save(); render(); };
+
+  const chips = document.getElementById("variants");
+  variants.forEach(v => {
+    const c = document.createElement("span");
+    c.className = "chip" + (ui.hidden.includes(v) ? "" : " on");
+    c.textContent = v;
+    c.onclick = () => {
+      ui.hidden = ui.hidden.includes(v) ? ui.hidden.filter(x => x !== v) : [...ui.hidden, v];
+      c.classList.toggle("on"); save(); render();
+    };
+    chips.appendChild(c);
+  });
+
+  function render() {
+    const shown = variants.filter(v => !ui.hidden.includes(v));
+    const sel = items.filter(i => (!ui.machine || i.machine === ui.machine) && (!ui.mic || i.mic === ui.mic)
+                                  && (!ui.label || i.label === ui.label));
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    const clips = uniq(sel.map(i => i.clip));
+    if (!clips.length) { list.innerHTML = '<div class="empty">Nothing matches the filters.</div>'; return; }
+    clips.forEach(clip => {
+      const ci = sel.filter(i => i.clip === clip);
+      const box = document.createElement("div");
+      box.className = "clip";
+      box.innerHTML = `<div class="head"><span class="tag ${ci[0].label}">${ci[0].label}</span>
+        <span class="muted">${ci[0].machine} &middot; ${ci[0].file}</span></div>`;
+      uniq(ci.map(i => i.mic)).forEach(mic => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.style.gridTemplateColumns = `18px repeat(${shown.length}, minmax(0, 1fr))`;
+        row.innerHTML = `<div class="mic">${mic} mic</div>` + shown.map(v => {
+          const it = ci.find(i => i.mic === mic && i.variant === v);
+          if (!it) return `<div class="cell"><div class="cap">${v}</div><div class="empty">not run</div></div>`;
+          return `<div class="cell"><div class="cap">${v}</div><img loading="lazy" src="${it.img}" alt="${v} spectrogram">
+                  <audio controls preload="none" src="${it.audio}"></audio>${it.note ? `<div class="note">${it.note}</div>` : ""}</div>`;
+        }).join("");
+        box.appendChild(row);
+      });
+      list.appendChild(box);
+    });
+  }
+  render();
+}).catch(e => { document.getElementById("list").innerHTML = '<div class="empty">Could not read manifest.json</div>'; });
+</script>
+</body>
+</html>
