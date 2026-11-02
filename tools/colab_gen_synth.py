@@ -2,9 +2,11 @@
 Same recipe as tools/gen_synth_v1.py / gen_synth_extra.py: prompt 'the sound of <toycar>', cfg 3, top-k 250, 10 s at
 16 kHz, from scratch. Seeds --seed0 + first index of each batch (v1 used 20000+, extra 30000+; default 50000+).
 Adapter files (lora_r16_full10.pt, toycar_token_lora_r16_full10.pt) come from the Hugging Face repo --hf_repo, or from
---weights_dir if given. Output: <out>/normal/0000.wav ... + <out>/meta.json. Resumable: existing clips are skipped.
+--weights_dir if given. Output: <out>/normal/0000.wav ... (--n clips) and <out>/faulty/0000.wav ... (--faulty clips,
+cycling through the three fault prompts of tools/audiogen_ti.py, as in gen_synth_v1.py) + <out>/meta.json.
+Resumable: existing clips are skipped. Larger --batch is much faster per clip (generation is step-by-step).
 Needs audiocraft 1.3.0 installed WITHOUT its pinned torch (see the Colab cell in README.md).
-Usage: python tools/colab_gen_synth.py --out /content/drive/MyDrive/dcase_gens --n 1000
+Usage: python tools/colab_gen_synth.py --out /content/drive/MyDrive/dcase_gens --n 1000 --faulty 1000 --batch 64
 """
 import argparse
 import json
@@ -15,13 +17,17 @@ from pathlib import Path
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--out", default="/content/drive/MyDrive/dcase_gens")
-ap.add_argument("--n", type=int, default=1000)
+ap.add_argument("--n", type=int, default=1000, help="normal clips")
+ap.add_argument("--faulty", type=int, default=0, help="faulty clips (fault prompts used in turn)")
 ap.add_argument("--batch", type=int, default=16)
 ap.add_argument("--seed0", type=int, default=50000)
 ap.add_argument("--hf_repo", default="ZappY-AI/audiogen-toycar-lora")
 ap.add_argument("--weights_dir", default=None, help="folder with the two .pt files (instead of Hugging Face)")
 args = ap.parse_args()
 PROMPT = "the sound of <toycar>"
+FAULT_PROMPTS = ["a broken <toycar> with subtle deviations from a working <toycar>",  # = audiogen_ti.ANOMALY_PROMPTS
+                 "a <toycar> with a faint intermittent rattle",
+                 "a <toycar> with a slightly worn, grinding gear"]
 FILES = ("lora_r16_full10.pt", "toycar_token_lora_r16_full10.pt")
 
 if args.weights_dir:
@@ -80,22 +86,25 @@ assert not res.unexpected_keys and not lora_missing, (res.unexpected_keys[:3], l
 print(f"loaded <toycar> token + {len(sd)} LoRA tensors")
 m.set_generation_params(duration=10.0, cfg_coef=3.0, top_k=250)
 
-OUT = Path(args.out) / "normal"; OUT.mkdir(parents=True, exist_ok=True)
-mpath = OUT.parent / "meta.json"
+ROOT_OUT = Path(args.out)
+mpath = ROOT_OUT / "meta.json"
 meta = json.loads(mpath.read_text()) if mpath.exists() else {}
-todo = [i for i in range(args.n) if not (OUT / f"{i:04d}.wav").exists()]
-print(f"{len(todo)} clips to generate (of {args.n}) -> {OUT}")
+jobs = [("normal", i, PROMPT) for i in range(args.n)] +        [("faulty", i, FAULT_PROMPTS[i % 3]) for i in range(args.faulty)]
+for c in ("normal", "faulty"):
+    (ROOT_OUT / c).mkdir(parents=True, exist_ok=True)
+todo = [j for j in jobs if not (ROOT_OUT / j[0] / f"{j[1]:04d}.wav").exists()]
+print(f"{len(todo)} clips to generate (of {args.n} normal + {args.faulty} faulty) -> {ROOT_OUT}")
 t0 = time.time()
 for b in range(0, len(todo), args.batch):
     chunk = todo[b : b + args.batch]
-    seed = args.seed0 + chunk[0]
+    seed = args.seed0 + (100000 if chunk[0][0] == "faulty" else 0) + chunk[0][1]
     torch.manual_seed(seed)
     with torch.no_grad():
-        w = m.generate([PROMPT] * len(chunk)).cpu().numpy()[:, 0, :160000]
-    for idx, x in zip(chunk, w):
-        sf.write(OUT / f"{idx:04d}.wav", x, 16000)
-        meta[f"normal/{idx:04d}.wav"] = {"prompt": PROMPT.replace("<toycar>", "[toycar]"), "batch_seed": seed}
+        w = m.generate([p for _, _, p in chunk]).cpu().numpy()[:, 0, :160000]
+    for (c, idx, p), x in zip(chunk, w):
+        sf.write(ROOT_OUT / c / f"{idx:04d}.wav", x, 16000)
+        meta[f"{c}/{idx:04d}.wav"] = {"prompt": p.replace("<toycar>", "[toycar]"), "batch_seed": seed}
     mpath.write_text(json.dumps(meta, indent=1))
     done = b + len(chunk); el = time.time() - t0
     print(f"{done}/{len(todo)}  {el / done:.1f} s per clip, ~{el / done * (len(todo) - done) / 60:.0f} min left", flush=True)
-print("done:", OUT)
+print("done:", ROOT_OUT)
