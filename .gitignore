@@ -36,3 +36,6 @@ third_party/
 *.out
 !showcase/**
 *.log
+
+# generated synthetic clips (large)
+dcase_gens/

@@ -76,6 +76,8 @@
   .note { font-size: 13px; color: var(--muted); }
   .up { color: var(--good); font-weight: 600; }
   .down { color: var(--bad); font-weight: 600; }
+  a.card.update { display: block; color: inherit; text-decoration: none; }
+  a.card.update:hover { border-color: var(--accent); }
   footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
   @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px) { .wrap { padding: 0 16px; } .g2, .g3, .g4 { grid-template-columns: 1fr; } header.hero { padding-top: 40px; } }
@@ -93,7 +95,7 @@
 <nav class="toc"><div class="wrap">
   <a href="#task">1 · Task</a><a href="#idea">2 · Key idea</a><a href="#model">3 · Model &amp; results</a>
   <a href="#findings">4 · What we learned</a><a href="#domain">5 · Best lead</a><a href="#gen">6 · Generating machine sound</a>
-  <a href="#next">7 · Takeaways</a><button class="theme" id="theme" type="button">Theme</button>
+  <a href="#next">7 · Takeaways</a><a href="#updates">8 · Updates</a><button class="theme" id="theme" type="button">Theme</button>
 </div></nav>
 <main class="wrap">
 
@@ -232,6 +234,17 @@
       clearest lead (+6 points linear, +10 on fan); next step is putting both experts on one scale.</p></div>
     <div class="card take"><b>3</b><p><strong>Generators get the gist, not the fault.</strong> AudioGen + LoRA reproduces ToyCar's tone
       and structure, but its codec drops the fine detail where real faults live.</p></div>
+  </div>
+</section>
+
+<section id="updates">
+  <h2><span class="num">8</span>Updates</h2>
+  <p class="sub">One page per update, newest first.</p>
+  <div class="grid">
+    <a class="card update" href="updates/2026-11-02.html"><div class="pill">2 November 2026</div>
+      <h3>Gradient reversal with 4× more synthetic data</h3>
+      <p>Domain-adversarial training on ToyCar with ~2,000 new AudioGen clips: official score 0.522, while real and
+        synthetic normals stay fully separable.</p></a>
   </div>
 </section>
 </main>

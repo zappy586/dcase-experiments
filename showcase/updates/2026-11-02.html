@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRL Update 2 Nov</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f7f5; --card: #ffffff; --text: #16181d; --text-2: #4b4f58; --muted: #767b85; --line: #e4e5e8;
+    --accent: #2a78d6; --accent-soft: #e9f1fc; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --ref: #a3a7af;
+    --good: #0f8a5f; --bad: #c2410c; --shadow: 0 1px 2px rgba(20, 24, 33, .05), 0 4px 16px rgba(20, 24, 33, .04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+      --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+      --good: #34c08a; --bad: #f08a5d; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+    --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+    --good: #34c08a; --bad: #f08a5d; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.hero { padding: 64px 0 36px; }
+  .eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; margin: 10px 0 14px; letter-spacing: -.02em; }
+  .lede { font-size: 18px; color: var(--text-2); max-width: 760px; margin: 0; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 22px; overflow-x: auto; padding-top: 12px; padding-bottom: 12px; scrollbar-width: none; }
+  nav.toc a { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; font-weight: 500; }
+  nav.toc a:hover { color: var(--text); }
+  .theme { margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+  section { padding: 56px 0 8px; scroll-margin-top: 48px; }
+  h2 { font-size: 28px; letter-spacing: -.015em; margin: 0 0 6px; }
+  .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .sub { color: var(--text-2); margin: 0 0 24px; max-width: 780px; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); min-width: 0; }
+  .card p { margin: 0; color: var(--text-2); font-size: 15px; }
+  .stat .v { font-size: 34px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .k { color: var(--text-2); font-size: 14px; margin-top: 4px; }
+  .stat .d { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; background: var(--accent-soft); color: var(--accent); margin-bottom: 10px; }
+  .clip { padding: 14px; }
+  .clip .t { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .clip .c { color: var(--muted); font-size: 13px; margin-bottom: 8px; min-height: 20px; }
+  .clip img { width: 100%; border-radius: 8px; display: block; background: #000; }
+  .clip audio { width: 100%; height: 34px; margin-top: 8px; }
+  .figure img.arch { width: 100%; border-radius: 10px; display: block; background: #fff; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chart { width: 100%; }
+  .chart text { fill: var(--text-2); font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .chart .axis { stroke: var(--line); }
+  .chart .grid line { stroke: var(--line); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin: 4px 0 8px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .take { display: flex; gap: 14px; align-items: flex-start; }
+  .take b { font-size: 22px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .note { font-size: 13px; color: var(--muted); }
+  .up { color: var(--good); font-weight: 600; }
+  .down { color: var(--bad); font-weight: 600; }
+  footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } .g2, .g3, .g4 { grid-template-columns: 1fr; } header.hero { padding-top: 40px; } }
+  .back { color: var(--accent); text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+  code { font-size: .92em; background: var(--accent-soft); padding: 1px 5px; border-radius: 5px; }
+  footer code { background: none; padding: 0; }
+  .diagram { width: 100%; height: auto; display: block; }
+  .diagram .d-box { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+  .diagram .d-main { stroke: var(--s1); }
+  .diagram .d-c1 { stroke: var(--s3); }
+  .diagram .d-c2, .diagram .d-grl { stroke: var(--s2); }
+  .diagram .d-line { stroke: var(--muted); stroke-width: 1.8; fill: none; }
+  .diagram .d-arrowhead { fill: var(--muted); }
+  .diagram .d-t { fill: var(--text); font: 600 17px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .diagram .d-s { fill: var(--text-2); font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><a class="back" href="../index.html">← Main page</a> · Update · 2 November 2026</div>
+    <h1>Gradient reversal with 4× more synthetic data</h1>
+    <p class="lede">We retrained the domain-adversarial (GRL) model on ToyCar with about 2,000 new AudioGen clips, roughly
+      four times the synthetic data of the earlier runs. The aim was to see whether more synthetic data lets the model make
+      real and synthetic normal sounds look the same, while still telling normal from faulty.</p>
+  </div>
+</header>
+<nav class="toc"><div class="wrap">
+  <a href="#model">1 · Model</a><a href="#data">2 · Data</a><a href="#setup">3 · Training</a>
+  <a href="#results">4 · Results</a><a href="#takeaways">5 · Takeaways</a><button class="theme" id="theme" type="button">Theme</button>
+</div></nav>
+<main class="wrap">
+
+<section id="model">
+  <h2><span class="num">1</span>The model</h2>
+  <p class="sub">One shared backbone feeds two classifiers. Classifier 1 learns normal vs faulty. Classifier 2 tries to tell
+    real recordings from AudioGen-generated ones, but it sits behind a gradient-reversal layer (GRL). The GRL flips the
+    sign of classifier 2's gradient before it reaches the backbone, so while classifier 2 learns to spot synthetic clips,
+    the backbone is pushed to hide that difference.</p>
+  <div class="card figure">
+    <svg class="diagram" viewBox="0 0 900 250" role="img" aria-label="Diagram: audio clip into BEATs with LoRA, giving a 768-number feature that feeds classifier 1 directly and classifier 2 through a gradient-reversal layer">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="d-arrowhead"/></marker></defs>
+      <rect class="d-box" x="10" y="95" width="130" height="60" rx="10"/>
+      <text class="d-t" x="75" y="121" text-anchor="middle">Audio clip</text>
+      <text class="d-s" x="75" y="140" text-anchor="middle">10 s, 16 kHz</text>
+      <line class="d-line" x1="140" y1="125" x2="180" y2="125" marker-end="url(#ar)"/>
+      <rect class="d-box d-main" x="182" y="80" width="190" height="90" rx="10"/>
+      <text class="d-t" x="277" y="112" text-anchor="middle">BEATs backbone</text>
+      <text class="d-s" x="277" y="132" text-anchor="middle">pretrained, frozen</text>
+      <text class="d-s" x="277" y="150" text-anchor="middle">+ LoRA adapters (trained)</text>
+      <line class="d-line" x1="372" y1="125" x2="412" y2="125" marker-end="url(#ar)"/>
+      <rect class="d-box" x="414" y="95" width="130" height="60" rx="10"/>
+      <text class="d-t" x="479" y="121" text-anchor="middle">Feature</text>
+      <text class="d-s" x="479" y="140" text-anchor="middle">768 numbers</text>
+      <path class="d-line" d="M544,115 C590,115 590,55 636,55" marker-end="url(#ar)"/>
+      <path class="d-line" d="M544,135 C570,135 570,195 590,195" marker-end="url(#ar)"/>
+      <rect class="d-box d-c1" x="638" y="25" width="250" height="60" rx="10"/>
+      <text class="d-t" x="763" y="51" text-anchor="middle">Classifier 1</text>
+      <text class="d-s" x="763" y="70" text-anchor="middle">normal vs faulty</text>
+      <rect class="d-box d-grl" x="592" y="172" width="64" height="46" rx="8"/>
+      <text class="d-t" x="624" y="200" text-anchor="middle">GRL</text>
+      <line class="d-line" x1="656" y1="195" x2="676" y2="195" marker-end="url(#ar)"/>
+      <rect class="d-box d-c2" x="678" y="165" width="210" height="60" rx="10"/>
+      <text class="d-t" x="783" y="191" text-anchor="middle">Classifier 2</text>
+      <text class="d-s" x="783" y="210" text-anchor="middle">real vs synthetic</text>
+    </svg>
+    <div class="caption">Anomaly score at test time: the output of classifier 1 (higher = more likely faulty). Classifier 2 is
+      only used during training. The GRL passes features through unchanged on the way forward and multiplies the gradient by
+      −λ on the way back.</div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>Classifier 1</h3><p>Small MLP (768 → 128 → 1). Trained on real + synthetic normals (label normal) vs
+      synthetic faulty clips (label faulty), with the two classes weighted equally.</p></div>
+    <div class="card"><h3>Classifier 2</h3><p>Same size MLP. Trained on real normals (label real) vs synthetic normal and faulty clips
+      (label synthetic). Real and synthetic each make up half of every batch.</p></div>
+    <div class="card"><h3>GRL strength λ</h3><p>Standard schedule from Ganin et al. (2016): λ rises smoothly from 0 to 1 as
+      λ = 2 / (1 + e<sup>−10p</sup>) − 1, where p is the fraction of training done. It reaches 0.99 halfway through.</p></div>
+  </div>
+</section>
+
+<section id="data">
+  <h2><span class="num">2</span>Data</h2>
+  <p class="sub">All real data is ToyCar from the DCASE 2026 Task 2 development set, using the near-minus-far signal.
+    Synthetic clips come from AudioGen-medium fine-tuned on the 1,000 real ToyCar training normals (a LoRA adapter plus a
+    learned <code>&lt;toycar&gt;</code> word), generated in 10 s clips. No real anomalies are used for training or for
+    choosing settings; the real test labels are used only to report scores.</p>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">1,000</div><div class="k">real normal clips</div><div class="d">all ToyCar training clips</div></div>
+    <div class="card stat"><div class="v">946</div><div class="k">synthetic normal clips</div><div class="d">896 for training, 50 held out</div></div>
+    <div class="card stat"><div class="v">1,006</div><div class="k">synthetic faulty clips</div><div class="d">956 for training, 50 held out</div></div>
+    <div class="card stat"><div class="v">200</div><div class="k">real test clips</div><div class="d">100 normal + 100 anomalous, scoring only</div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Text prompts used for generation</h3>
+    <table>
+      <tr><th>Class</th><th>Prompt</th><th class="r">Clips</th></tr>
+      <tr><td>Normal</td><td>“the sound of &lt;toycar&gt;”</td><td class="r">946</td></tr>
+      <tr><td>Faulty</td><td>“a broken &lt;toycar&gt; with subtle deviations from a working &lt;toycar&gt;”</td><td class="r" rowspan="3">1,006<br><span class="note">split evenly</span></td></tr>
+      <tr><td>Faulty</td><td>“a &lt;toycar&gt; with a faint intermittent rattle”</td></tr>
+      <tr><td>Faulty</td><td>“a &lt;toycar&gt; with a slightly worn, grinding gear”</td></tr>
+    </table>
+    <p class="note" style="margin-top:10px">Sampling: classifier-free guidance 3, top-k 250, 10 s per clip. The earlier GRL runs used
+      250 normal + 250 faulty clips from the same generator (200 + 200 for training).</p>
+  </div>
+  <h3 style="margin-top:28px">Listen</h3>
+  <p class="sub" style="margin-bottom:14px">Loudness-normalised to the same level so the clips can be compared by ear.</p>
+  <div class="grid g3">
+    <div class="card clip"><div class="t">Real ToyCar, normal</div><div class="c">training recording</div>
+      <img src="../assets/updates/2026-11-02/img/real_normal.png" alt="Spectrogram of a real normal ToyCar clip"><audio controls preload="none" src="../assets/updates/2026-11-02/audio/real_normal.wav"></audio></div>
+    <div class="card clip"><div class="t">Synthetic, normal</div><div class="c">“the sound of &lt;toycar&gt;”</div>
+      <img src="../assets/updates/2026-11-02/img/syn_normal.png" alt="Spectrogram of a synthetic normal clip"><audio controls preload="none" src="../assets/updates/2026-11-02/audio/syn_normal.wav"></audio></div>
+    <div class="card clip"><div class="t">Synthetic, faulty</div><div class="c">“broken … subtle deviations”</div>
+      <img src="../assets/updates/2026-11-02/img/syn_broken.png" alt="Spectrogram of a synthetic faulty clip, broken prompt"><audio controls preload="none" src="../assets/updates/2026-11-02/audio/syn_broken.wav"></audio></div>
+    <div class="card clip"><div class="t">Synthetic, faulty</div><div class="c">“faint intermittent rattle”</div>
+      <img src="../assets/updates/2026-11-02/img/syn_rattle.png" alt="Spectrogram of a synthetic faulty clip, rattle prompt"><audio controls preload="none" src="../assets/updates/2026-11-02/audio/syn_rattle.wav"></audio></div>
+    <div class="card clip"><div class="t">Synthetic, faulty</div><div class="c">“slightly worn, grinding gear”</div>
+      <img src="../assets/updates/2026-11-02/img/syn_grinding.png" alt="Spectrogram of a synthetic faulty clip, grinding prompt"><audio controls preload="none" src="../assets/updates/2026-11-02/audio/syn_grinding.wav"></audio></div>
+  </div>
+</section>
+
+<section id="setup">
+  <h2><span class="num">3</span>Training</h2>
+  <div class="card">
+    <table>
+      <tr><th>Setting</th><th>Value</th></tr>
+      <tr><td>Backbone</td><td>BEATs (iter3, 90M parameters) frozen, LoRA rank 8 on the attention and feed-forward layers of all 12 blocks: 1.18M trainable parameters</td></tr>
+      <tr><td>Input</td><td>Full 10 s clips with a random circular time shift (same length as at test time)</td></tr>
+      <tr><td>Batch</td><td>32 clips per step: 16 real normal + 8 synthetic normal + 8 synthetic faulty</td></tr>
+      <tr><td>Steps</td><td>1,000 steps (~1.05 s each, about 18 minutes on one GPU), λ schedule over the 1,000 steps</td></tr>
+      <tr><td>Optimiser</td><td>AdamW, learning rate 1e-4 for LoRA, 1e-3 for both classifiers, weight decay 0.01</td></tr>
+      <tr><td>Seeds</td><td>One run (seed 0)</td></tr>
+      <tr><td>Checks every 250 steps</td><td>Official score on the real test set; normal vs faulty AUC on the 100 held-out synthetic clips;
+        classifier 2's accuracy; and four fresh probes (below)</td></tr>
+    </table>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>What the probes measure</h3>
+    <p>Classifier 2 can be fooled without the gap actually closing, so at every check we train four new, independent
+      classifiers on the backbone's features: logistic regression, an RBF-kernel SVM, a small MLP and k-nearest neighbours.
+      Each one tries to separate real normal clips from synthetic normal clips (5-fold cross-validation AUC).
+      <strong>1.0 means they are perfectly separable; 0.5 means the two cannot be told apart</strong>, which is the goal.
+      A fifth probe checks that real normal vs real anomalous clips stay separable (higher is better).</p>
+  </div>
+</section>
+
+<section id="results">
+  <h2><span class="num">4</span>Results</h2>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">0.522</div><div class="k">official score Ω, real test</div><div class="d">at step 1,000 (earlier 200 + 200 run: 0.519)</div></div>
+    <div class="card stat"><div class="v">0.964</div><div class="k">held-out synthetic AUC</div><div class="d">normal vs faulty (earlier run: 0.918)</div></div>
+    <div class="card stat"><div class="v">1.000</div><div class="k">classifier 2 accuracy</div><div class="d">real vs synthetic, at every check</div></div>
+    <div class="card stat"><div class="v">1.000</div><div class="k">all four probes</div><div class="d">real vs synthetic normal, at every check</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Official score on the real test set during training</h3>
+    <div class="legend"><span><i style="background:var(--s1)"></i>This run (946 + 1,006 synthetic, 10 s clips)</span>
+      <span><i style="background:var(--ref)"></i>Earlier run (250 + 250 synthetic, 5 s crops)</span></div>
+    <svg id="omegaChart" class="chart" role="img" aria-label="Line chart of the official score against training step for the two runs"></svg>
+    <div class="caption">Dashed line: 0.5, the score of random guessing. The earlier run was trained for 1,200 steps and checked every 300.</div>
+  </div>
+
+  <div class="card" style="margin-top:16px; overflow-x:auto">
+    <h3>Every check of this run</h3>
+    <table>
+      <tr><th class="r">Step</th><th class="r">λ</th><th class="r">Loss, classifier 1</th><th class="r">Loss, classifier 2</th>
+        <th class="r">Source AUC</th><th class="r">Target AUC</th><th class="r">pAUC</th><th class="r">Official</th>
+        <th class="r">Held-out synthetic AUC</th><th class="r">Classifier 2 accuracy</th>
+        <th class="r">Probes: real vs synthetic normal</th><th class="r">Probe: real normal vs anomaly</th></tr>
+      <tr><td class="r">0</td><td class="r">0</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">1.000</td><td class="r">0.828</td></tr>
+      <tr><td class="r">250</td><td class="r">0.85</td><td class="r">0.219</td><td class="r">0.000</td><td class="r">0.435</td><td class="r">0.483</td><td class="r">0.483</td><td class="r">0.466</td><td class="r">0.860</td><td class="r">1.000</td><td class="r">1.000</td><td class="r">0.833</td></tr>
+      <tr><td class="r">500</td><td class="r">0.99</td><td class="r">0.239</td><td class="r">0.001</td><td class="r">0.445</td><td class="r">0.485</td><td class="r">0.496</td><td class="r">0.474</td><td class="r">0.936</td><td class="r">1.000</td><td class="r">1.000</td><td class="r">0.841</td></tr>
+      <tr><td class="r">750</td><td class="r">1.00</td><td class="r">0.340</td><td class="r">0.000</td><td class="r">0.492</td><td class="r">0.529</td><td class="r">0.506</td><td class="r">0.509</td><td class="r">0.956</td><td class="r">1.000</td><td class="r">1.000</td><td class="r">0.832</td></tr>
+      <tr><td class="r">1,000</td><td class="r">1.00</td><td class="r">0.208</td><td class="r">0.000</td><td class="r">0.503</td><td class="r">0.553</td><td class="r">0.512</td><td class="r"><strong>0.522</strong></td><td class="r">0.964</td><td class="r">1.000</td><td class="r">1.000</td><td class="r">0.821</td></tr>
+    </table>
+    <p class="note" style="margin-top:10px">Losses are averages over the 50 steps before each check. “Probes: real vs synthetic
+      normal” is 1.000 for all four probes (logistic regression, RBF-SVM, MLP, kNN) at every check. Step 0 is the pretrained
+      backbone before any training.</p>
+  </div>
+</section>
+
+<section id="takeaways">
+  <h2><span class="num">5</span>Takeaways</h2>
+  <div class="grid g3">
+    <div class="card take"><b>1</b><p><strong>The GRL does not close the gap, even with 4× the data.</strong> Classifier 2 stays at
+      100% accuracy and its loss near zero for the whole run, even at full λ = 1. The four fresh probes also stay at 1.000,
+      the same as before training.</p></div>
+    <div class="card take"><b>2</b><p><strong>Classifier 1 learns the synthetic faults well, but this barely reaches real ones.</strong>
+      Held-out synthetic AUC rose to 0.964 (from 0.918 with less data), while the real-test score ended at 0.522, close to
+      the earlier run's 0.519 and only a little above chance.</p></div>
+    <div class="card take"><b>3</b><p><strong>The backbone still holds the real fault information.</strong> A probe separates real
+      normal from real anomalous clips at 0.82–0.84 throughout, so training did not damage it; classifier 1 just does not
+      use that information, because it learns AudioGen's version of a fault.</p></div>
+  </div>
+  <p class="note" style="margin-top:16px">Caveats: one seed, 1,000 steps. The two runs also differ in clip length
+    (10 s vs 5 s crops) and number of steps, not only in the amount of synthetic data.</p>
+</section>
+</main>
+<footer><div class="wrap">ToyCar, DCASE 2026 Task 2 development set. Official score Ω = harmonic mean of source AUC, target AUC and
+  pAUC (FPR ≤ 0.1). Training script: <code>tools/grl_v2.py --lam 1 --rank 8 --crop_len 160000 --probe --syn_dir dcase_gens --steps 1000 --eval 250</code>.</div></footer>
+
+<script>
+(function () {
+  const root = document.documentElement;
+  const btn = document.getElementById("theme");
+  try { const t = localStorage.getItem("showcase-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  btn.onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("showcase-theme", root.dataset.theme); } catch (e) {}
+  };
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
+  const svg = document.getElementById("omegaChart"), W = 720, H = 260, x0 = 48, x1 = W - 70, y0 = 14, y1 = H - 34;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const sx = s => x0 + s / 1200 * (x1 - x0), sy = v => y0 + (0.6 - v) / 0.15 * (y1 - y0);
+  const g = el("g", { class: "grid" }, svg);
+  [0.45, 0.5, 0.55, 0.6].forEach(t => { el("line", { x1: x0, x2: x1, y1: sy(t), y2: sy(t) }, g);
+    el("text", { x: x0 - 8, y: sy(t) + 5, "text-anchor": "end" }, svg, t.toFixed(2)); });
+  [0, 250, 500, 750, 1000, 1200].forEach(t => el("text", { x: sx(t), y: H - 10, "text-anchor": "middle" }, svg, t.toLocaleString()));
+  el("line", { x1: x0, x2: x1, y1: sy(0.5), y2: sy(0.5), stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "5 5" }, svg);
+  const series = [
+    ["Earlier run", "var(--ref)", [[300, .512], [600, .494], [900, .512], [1200, .519]]],
+    ["This run", "var(--s1)", [[250, .466], [500, .474], [750, .509], [1000, .522]]],
+  ];
+  series.forEach(([name, color, pts]) => {
+    el("path", { d: pts.map(([s, v], i) => `${i ? "L" : "M"}${sx(s)},${sy(v)}`).join(""), fill: "none", stroke: color,
+      "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+    pts.forEach(([s, v]) => {
+      el("circle", { cx: sx(s), cy: sy(v), r: 5, fill: color, stroke: "var(--card)", "stroke-width": 2 }, svg);
+      const hit = el("circle", { cx: sx(s), cy: sy(v), r: 14, fill: "transparent" }, svg);
+      el("title", {}, hit, `${name}, step ${s.toLocaleString()}: official ${v.toFixed(3)}`);
+    });
+    const [ls, lv] = pts[pts.length - 1];
+    el("text", { x: sx(ls) + 10, y: sy(lv) + (name === "This run" ? -6 : 16) }, svg, lv.toFixed(3));
+  });
+})();
+</script>
+</body>
+</html>

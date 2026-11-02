@@ -108,6 +108,8 @@ def main():
                     "Gaussian noise of this std (whitened units with --white) on its input, falling linearly to 0")
     ap.add_argument("--crop_len", type=int, default=80000, help="training clip length in samples (160000 = full 10 s, "
                     "the length used at evaluation and by the probes)")
+    ap.add_argument("--syn_dir", default=str(SYN), help="folder with normal/*.wav and faulty/*.wav synthetic clips")
+    ap.add_argument("--n_val", type=int, default=50, help="synthetic clips per class held out for evaluation")
     ap.add_argument("--lam_const", action="store_true", help="GRL coefficient fixed at --lam from step 1 (no DANN ramp)")
     ap.add_argument("--inoise_end", type=float, default=0.75, help="fraction of training at which the noise reaches 0")
     ap.add_argument("--white_ema", type=float, default=0.0, help="(--white) recompute the whitening every step from a "
@@ -117,7 +119,7 @@ def main():
     torch.manual_seed(args.seed); rng = np.random.default_rng(args.seed)
     tag = (f"{'wd' if args.wd else 'conf' if args.confusion else 'lam'} {args.lam:g}{'c' if args.lam_const else ''} {'full' if args.full else f'lora r{args.rank}'}"
            f"{' rt' if args.rt else ''}{' domN' if args.dom_normals else ''}{f' white{args.white:g}' if args.white else ''}{f' ema{args.white_ema:g}' if args.white_ema else ''}{f' inoise{args.inoise:g}' if args.inoise else ''}{f' crop{args.crop_len}' if args.crop_len != 80000 else ''}"
-           f"{f' head/{args.head_every} hlr {args.head_lr:g} sm {args.dom_smooth:g}' if args.head_every > 1 else ''} seed {args.seed}")
+           f"{'' if Path(args.syn_dir) == SYN else f' syn-{Path(args.syn_dir).name}'}{f' head/{args.head_every} hlr {args.head_lr:g} sm {args.dom_smooth:g}' if args.head_every > 1 else ''} seed {args.seed}")
     log = lambda m: A.log(f"grl_v2 [{tag}]: {m}")
 
     D = A.Data("ToyCar", dev)
@@ -127,10 +129,13 @@ def main():
         real = torch.from_numpy(np.load(ROOT / "cache" / "toycar_rt_train.npy").astype(np.float32))
         test = torch.from_numpy(np.load(ROOT / "cache" / "toycar_rt_test.npy").astype(np.float32))
     lab, dom = np.array(D.meta["test"]["label"]), np.array(D.meta["test"]["domain"])
-    gen = {c: torch.as_tensor(np.stack([sf.read(f, dtype="float32")[0][:160000] for f in sorted((SYN / c).glob("*.wav"))]))
+    sdir = Path(args.syn_dir)
+    gen = {c: torch.as_tensor(np.stack([sf.read(f, dtype="float32")[0][:160000] for f in sorted((sdir / c).glob("*.wav"))]))
            for c in ("normal", "faulty")}
-    perm = {c: rng.permutation(250) for c in gen}
-    tr = {c: gen[c][perm[c][50:]] for c in gen}; va = {c: gen[c][perm[c][:50]] for c in gen}
+    perm = {c: rng.permutation(len(gen[c])) for c in gen}
+    tr = {c: gen[c][perm[c][args.n_val:]] for c in gen}; va = {c: gen[c][perm[c][:args.n_val]] for c in gen}
+    log(f"data: {len(real)} real train normals, {len(test)} real test clips | synthetic from {sdir.name}: "
+        f"train {len(tr['normal'])} normal + {len(tr['faulty'])} faulty, held out {args.n_val} + {args.n_val}")
 
     net = Net(args.rank, args.full).to(dev)
     bb = [p for p in net.beats.parameters() if p.requires_grad]
