@@ -3,8 +3,13 @@
   uv run python download.py dev                  # development set: 7 machines, train + test (~4.8 GB)
   uv run python download.py eval                 # evaluation set: 5 machines, train + test (~3.4 GB)
   uv run python download.py all
-  uv run python download.py dev --machines ToyCar fan   # only some machines
+  uv run python download.py dev --class ToyCar          # one machine class (same as --machines ToyCar)
+  uv run python download.py dev --class ToyCar fan      # several
   uv run python download.py eval --list          # show the files and sizes, download nothing
+
+Works on Windows, macOS and Linux (Python >= 3.9, only needs tqdm besides the standard library).
+Dev classes: ToyCar ToyCarEmu bearingEmu fan gearboxEmu sliderEmu valveEmu.
+Eval classes: BlowerDustCollector Sander SewingMachine ToothBrush ToyDrone.
 
 File names, sizes and MD5 checksums come from the Zenodo records below. Archives go to dataset/ (dev) and
 dataset/eval/ (eval), the downloads resume after an interruption (.part files), every file is checked against its MD5,
@@ -78,7 +83,8 @@ def download(f, dest, pos):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("set", choices=["dev", "eval", "all"])
-    ap.add_argument("--machines", nargs="+", help="only these machines (names as in data/, e.g. ToyCar fan)")
+    ap.add_argument("--machines", "--class", nargs="+", dest="machines", metavar="CLASS",
+                    help="only these machine classes (names as in data/, case-insensitive, e.g. ToyCar fan)")
     ap.add_argument("--list", action="store_true", help="list the files and exit")
     ap.add_argument("--no-extract", action="store_true", help="download only")
     ap.add_argument("--workers", type=int, default=4)
