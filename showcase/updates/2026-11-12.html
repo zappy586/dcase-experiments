@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Faults 12 Nov</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f7f5; --card: #ffffff; --text: #16181d; --text-2: #4b4f58; --muted: #767b85; --line: #e4e5e8;
+    --accent: #2a78d6; --accent-soft: #e9f1fc; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --ref: #a3a7af;
+    --good: #0f8a5f; --bad: #c2410c; --shadow: 0 1px 2px rgba(20, 24, 33, .05), 0 4px 16px rgba(20, 24, 33, .04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+      --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+      --good: #34c08a; --bad: #f08a5d; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121316; --card: #1b1d21; --text: #eceef1; --text-2: #c2c6cd; --muted: #8d929b; --line: #2b2e34;
+    --accent: #5b9df0; --accent-soft: #1d2a3d; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --ref: #6b7079;
+    --good: #34c08a; --bad: #f08a5d; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.hero { padding: 64px 0 36px; }
+  .eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; margin: 10px 0 14px; letter-spacing: -.02em; }
+  .lede { font-size: 18px; color: var(--text-2); max-width: 760px; margin: 0; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 22px; overflow-x: auto; padding-top: 12px; padding-bottom: 12px; scrollbar-width: none; }
+  nav.toc a { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; font-weight: 500; }
+  nav.toc a:hover { color: var(--text); }
+  .theme { margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 2px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+  section { padding: 56px 0 8px; scroll-margin-top: 48px; }
+  h2 { font-size: 28px; letter-spacing: -.015em; margin: 0 0 6px; }
+  .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .sub { color: var(--text-2); margin: 0 0 24px; max-width: 780px; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); min-width: 0; }
+  .card p { margin: 0; color: var(--text-2); font-size: 15px; }
+  .stat .v { font-size: 34px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .k { color: var(--text-2); font-size: 14px; margin-top: 4px; }
+  .stat .d { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; background: var(--accent-soft); color: var(--accent); margin-bottom: 10px; }
+  .clip { padding: 14px; }
+  .clip .t { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .clip .c { color: var(--muted); font-size: 13px; margin-bottom: 8px; min-height: 20px; }
+  .clip img { width: 100%; border-radius: 8px; display: block; background: #000; }
+  .clip audio { width: 100%; height: 34px; margin-top: 8px; }
+  .figure img.arch { width: 100%; border-radius: 10px; display: block; background: #fff; }
+  .caption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chart { width: 100%; }
+  .chart text { fill: var(--text-2); font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .chart .axis { stroke: var(--line); }
+  .chart .grid line { stroke: var(--line); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-2); margin: 4px 0 8px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .take { display: flex; gap: 14px; align-items: flex-start; }
+  .take b { font-size: 22px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .note { font-size: 13px; color: var(--muted); }
+  .up { color: var(--good); font-weight: 600; }
+  .down { color: var(--bad); font-weight: 600; }
+  footer { padding: 48px 0 64px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .wrap { padding: 0 16px; } .g2, .g3, .g4 { grid-template-columns: 1fr; } header.hero { padding-top: 40px; } }
+  .back { color: var(--accent); text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+  code { font-size: .92em; background: var(--accent-soft); padding: 1px 5px; border-radius: 5px; }
+  footer code { background: none; padding: 0; }
+  .diagram { width: 100%; height: auto; display: block; }
+  .diagram .d-box { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
+  .diagram .d-main { stroke: var(--s1); }
+  .diagram .d-c1 { stroke: var(--s3); }
+  .diagram .d-c2, .diagram .d-grl { stroke: var(--s2); }
+  .diagram .d-line { stroke: var(--muted); stroke-width: 1.8; fill: none; }
+  .diagram .d-arrowhead { fill: var(--muted); }
+  .diagram .d-t { fill: var(--text); font: 600 17px system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .diagram .d-s { fill: var(--text-2); font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><a class="back" href="../index.html">← Main page</a> · Update · 12 November 2026</div>
+    <h1>One synthetic-fault recipe, four machines</h1>
+    <p class="lede">We ran a single class-invariant recipe, with Stable Audio Open (SAO) synthetic faults and no real anomalies,
+      on ToyCar, fan, gearboxEmu and bearingEmu. It clearly works on ToyCar only. One measurement lines up with which
+      machines work: how close the generated sounds are to the real recordings.</p>
+  </div>
+</header>
+<nav class="toc"><div class="wrap">
+  <a href="#recipe">1 · Recipe</a><a href="#results">2 · Results</a><a href="#realism">3 · Realism</a><a href="#takeaways">4 · Takeaways</a>
+  <button class="theme" id="theme" type="button">Theme</button>
+</div></nav>
+<main class="wrap">
+
+<section id="recipe">
+  <h2><span class="num">1</span>The recipe (same for every machine)</h2>
+  <div class="grid g3">
+    <div class="card"><h3>Generator</h3><p>SAO with a DreamBooth LoRA (rank 64, 3,000 steps) trained on the machine's 1,000 real
+      normal clips (near-minus-far audio), plus a decoder fine-tuned on the same clips. One generic description template; the machine
+      name is the only thing that changes.</p></div>
+    <div class="card"><h3>Synthetic data</h3><p>144 sets per machine. Each set is one normal and three faults generated from the same
+      noise. The fault text is drawn at random from 300 generic fault descriptions (25 kinds × 4 severities × 3 phrasings) that
+      name no machine parts.</p></div>
+    <div class="card"><h3>Scoring</h3><p>Fault direction = average of (synthetic fault − its own synthetic normal) in BEATs
+      features. A real test clip's anomaly score is its projection onto that direction. Nothing is trained on real anomalies;
+      test labels are used only to compute Ω.</p></div>
+  </div>
+</section>
+
+<section id="results">
+  <h2><span class="num">2</span>Results on the real test sets</h2>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <tr><th>Machine</th><th class="r">Ω, synthetic projection</th><th class="r">Source AUC</th><th class="r">Target AUC</th><th class="r">pAUC</th>
+        <th class="r">Random directions, 95th pct</th><th class="r">Synthetic normal − normal</th><th class="r">kNN on real normals (reference)</th></tr>
+      <tr><td><strong>ToyCar</strong></td><td class="r"><strong class="up">0.633</strong></td><td class="r">0.626</td><td class="r">0.756</td><td class="r">0.549</td><td class="r">0.595</td><td class="r">0.468</td><td class="r">0.720</td></tr>
+      <tr><td>bearingEmu</td><td class="r">0.542</td><td class="r">0.554</td><td class="r">0.568</td><td class="r">0.508</td><td class="r">0.549</td><td class="r">0.544</td><td class="r">0.584</td></tr>
+      <tr><td>gearboxEmu</td><td class="r">0.500</td><td class="r">0.502</td><td class="r">0.499</td><td class="r">0.497</td><td class="r">0.609</td><td class="r">0.544</td><td class="r">0.641</td></tr>
+      <tr><td>fan</td><td class="r"><span class="down">0.443</span></td><td class="r"><span class="down">0.324</span></td><td class="r">0.618</td><td class="r">0.484</td><td class="r">0.564</td><td class="r">0.476</td><td class="r">0.542</td></tr>
+    </table>
+    <p class="note" style="margin-top:10px">Controls: the same projection along 200 random directions (95th percentile shown), and
+      along synthetic normal − synthetic normal (no fault text). Only ToyCar clears both. On fan the synthetic direction is clearly
+      reversed on source (only 3.4% of random directions score that low) and above chance on target.</p>
+  </div>
+</section>
+
+<section id="realism">
+  <h2><span class="num">3</span>Realism lines up with which machines work</h2>
+  <p class="sub">Realism here is the distance from each generated normal to its nearest real training normal (BEATs, cosine),
+    in units of the typical gap between two neighbouring real normals, after 3,000 DreamBooth steps. 1× would be as close as
+    real clips are to each other.</p>
+  <div class="grid g4">
+    <div class="card stat"><div class="v">16×</div><div class="k">ToyCar</div><div class="d">Ω 0.633, clears the controls</div></div>
+    <div class="card stat"><div class="v">19×</div><div class="k">bearingEmu</div><div class="d">Ω 0.542, at the controls</div></div>
+    <div class="card stat"><div class="v">34×</div><div class="k">gearboxEmu</div><div class="d">Ω 0.500, chance</div></div>
+    <div class="card stat"><div class="v">44×</div><div class="k">fan</div><div class="d">Ω 0.443, reversed on source</div></div>
+  </div>
+  <p class="note" style="margin-top:12px">Measured on 8 fixed sets at the end of training. On all 144 sets, the synthetic faults sit as
+    far from the real clips as the synthetic normals (ToyCar 15.9× against 16.1×; fan 41.2× against 41.1×), while real anomalies sit only 1.1–2.9× from the real normals.</p>
+</section>
+
+<section id="takeaways">
+  <h2><span class="num">4</span>Takeaways</h2>
+  <div class="grid g3">
+    <div class="card take"><b>1</b><p><strong>Synthetic faults alone carry real fault information on ToyCar.</strong> Ω 0.633
+      with no real anomalies, above every control.</p></div>
+    <div class="card take"><b>2</b><p><strong>The same recipe does not carry over to the other machines.</strong> Gearbox is at chance,
+      bearing at the level of the controls, and fan points the wrong way on source.</p></div>
+    <div class="card take"><b>3</b><p><strong>The machines where it works are the ones SAO learned well.</strong> ToyCar's generated
+      sounds are 16× from the real ones; gearbox and fan are 34–44×.</p></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">DCASE 2026 Task 2 development set, near-minus-far audio. Official score Ω = harmonic mean of source AUC, target AUC and
+  pAUC (FPR ≤ 0.1). Script: <code>tools/multi_machine.py --machine &lt;m&gt; --name "&lt;name&gt;"</code>.</div></footer>
+<script>
+(function () {
+  const root = document.documentElement, btn = document.getElementById("theme");
+  try { const t = localStorage.getItem("showcase-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+  btn.onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("showcase-theme", root.dataset.theme); } catch (e) {}
+  };
+})();
+</script>
+</body>
+</html>
