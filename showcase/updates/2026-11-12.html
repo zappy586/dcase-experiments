@@ -106,6 +106,7 @@
 </header>
 <nav class="toc"><div class="wrap">
   <a href="#recipe">1 · Recipe</a><a href="#results">2 · Results</a><a href="#realism">3 · Realism</a><a href="#takeaways">4 · Takeaways</a>
+  <a href="#flow">5 · Flow matching (separate)</a>
   <button class="theme" id="theme" type="button">Theme</button>
 </div></nav>
 <main class="wrap">
@@ -168,9 +169,86 @@
       sounds are 16× from the real ones; gearbox and fan are 34–44×.</p></div>
   </div>
 </section>
+
+<hr style="border:0; border-top:1px solid var(--line); margin:56px 0 0">
+<section id="flow">
+  <div class="pill">Separate experiment · no synthetic data</div>
+  <h2><span class="num">5</span>Flow matching on BEATs tokens (ToyCar)</h2>
+  <p class="sub">A generative model trained on the real ToyCar training normals only. It learns to turn random noise into the
+    near-microphone BEATs token grid, with the far microphone as optional context. A test clip is scored by how much of it the
+    model cannot reconstruct.</p>
+  <div class="card figure">
+    <svg class="diagram" viewBox="0 0 900 330" role="img" aria-label="Diagram: near and far audio go through frozen BEATs to a 62 by 8 token grid reduced by PCA; noisy near tokens plus far context enter an axial transformer of six blocks, each with time attention, frequency attention and an MLP conditioned on the noise level; the score is the time-averaged reconstruction error per frequency row">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="d-arrowhead"/></marker></defs>
+      <rect class="d-box" x="10" y="20" width="190" height="70" rx="10"/>
+      <text class="d-t" x="105" y="50" text-anchor="middle">Audio clip</text>
+      <text class="d-s" x="105" y="70" text-anchor="middle">near + far mic, 10 s</text>
+      <line class="d-line" x1="200" y1="55" x2="246" y2="55" marker-end="url(#ar)"/>
+      <rect class="d-box d-main" x="248" y="20" width="190" height="70" rx="10"/>
+      <text class="d-t" x="343" y="50" text-anchor="middle">BEATs</text>
+      <text class="d-s" x="343" y="70" text-anchor="middle">pretrained, frozen</text>
+      <line class="d-line" x1="438" y1="55" x2="484" y2="55" marker-end="url(#ar)"/>
+      <rect class="d-box" x="486" y="15" width="230" height="80" rx="10"/>
+      <text class="d-t" x="601" y="42" text-anchor="middle">Token grid per mic</text>
+      <text class="d-s" x="601" y="62" text-anchor="middle">62 time × 8 frequency</text>
+      <text class="d-s" x="601" y="80" text-anchor="middle">PCA 768 → 128 numbers</text>
+      <path class="d-line" d="M601,95 L601,125 L110,125 L110,178" marker-end="url(#ar)"/>
+      <rect class="d-box" x="10" y="180" width="200" height="100" rx="10"/>
+      <text class="d-t" x="110" y="210" text-anchor="middle">Input per token</text>
+      <text class="d-s" x="110" y="230" text-anchor="middle">noisy near Xₜ + far F</text>
+      <text class="d-s" x="110" y="248" text-anchor="middle">+ time, frequency position</text>
+      <text class="d-s" x="110" y="266" text-anchor="middle">+ 1 summary token per row</text>
+      <line class="d-line" x1="210" y1="230" x2="246" y2="230" marker-end="url(#ar)"/>
+      <rect class="d-box d-c1" x="248" y="150" width="340" height="160" rx="10"/>
+      <text class="d-t" x="418" y="176" text-anchor="middle">Axial transformer block × 6</text>
+      <rect class="d-box" x="262" y="192" width="96" height="62" rx="8"/>
+      <text class="d-s" x="310" y="219" text-anchor="middle">Time attn</text>
+      <text class="d-s" x="310" y="238" text-anchor="middle">within a row</text>
+      <line class="d-line" x1="358" y1="223" x2="370" y2="223" marker-end="url(#ar)"/>
+      <rect class="d-box" x="372" y="192" width="96" height="62" rx="8"/>
+      <text class="d-s" x="420" y="219" text-anchor="middle">Freq attn</text>
+      <text class="d-s" x="420" y="238" text-anchor="middle">within a step</text>
+      <line class="d-line" x1="468" y1="223" x2="480" y2="223" marker-end="url(#ar)"/>
+      <rect class="d-box" x="482" y="192" width="92" height="62" rx="8"/>
+      <text class="d-s" x="528" y="228" text-anchor="middle">MLP</text>
+      <text class="d-s" x="418" y="282" text-anchor="middle">each layer scaled by noise level t</text>
+      <text class="d-s" x="418" y="300" text-anchor="middle">(adaptive LayerNorm)</text>
+      <line class="d-line" x1="588" y1="230" x2="624" y2="230" marker-end="url(#ar)"/>
+      <rect class="d-box d-c2" x="626" y="165" width="264" height="130" rx="10"/>
+      <text class="d-t" x="758" y="193" text-anchor="middle">Anomaly score</text>
+      <text class="d-s" x="758" y="215" text-anchor="middle">velocity → recovered near N̂</text>
+      <text class="d-s" x="758" y="235" text-anchor="middle">error R = N − N̂</text>
+      <text class="d-s" x="758" y="255" text-anchor="middle">average R over time,</text>
+      <text class="d-s" x="758" y="275" text-anchor="middle">sum ‖·‖² over the 8 rows</text>
+    </svg>
+    <div class="caption">Trained with flow matching: Xₜ = (1 − t)·noise + t·near, target velocity near − noise. The far context is hidden
+      on half the training steps. About 10M trainable parameters (width 256, 4 heads); BEATs itself is not trained.</div>
+  </div>
+  <div class="card" style="margin-top:16px; overflow-x:auto">
+    <table>
+      <tr><th>Run (6,000 steps, batch 32)</th><th class="r">Ω, steady score</th><th class="r">Source AUC</th><th class="r">Target AUC</th><th class="r">pAUC</th><th class="r">Ω, plain per-token error</th></tr>
+      <tr><td>v1 · far → near</td><td class="r">0.585</td><td class="r">0.709</td><td class="r">0.563</td><td class="r">0.515</td><td class="r">0.481</td></tr>
+      <tr><td>v2 · noise → near, far as context</td><td class="r">0.638</td><td class="r">0.739</td><td class="r">0.674</td><td class="r">0.536</td><td class="r">0.488</td></tr>
+      <tr><td><strong>v3 · v2 + natural PCA scale + 25% target clips per batch</strong></td><td class="r"><strong class="up">0.667</strong></td><td class="r">0.720</td><td class="r">0.740</td><td class="r">0.570</td><td class="r">0.470</td></tr>
+      <tr><td>v4 · v3 on all 768 dimensions</td><td class="r">0.654</td><td class="r">0.723</td><td class="r">0.698</td><td class="r">0.564</td><td class="r">0.532</td></tr>
+      <tr><td><span class="note">Reference: kNN on real normals (BEATs clip mean)</span></td><td class="r">0.720</td><td class="r">0.744</td><td class="r">0.829</td><td class="r">0.618</td><td class="r">–</td></tr>
+    </table>
+    <p class="note" style="margin-top:10px">Score fixed before running: noise level t = 0.5, steady score, last step, 8 noise draws.</p>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card take"><b>1</b><p><strong>Faults are persistent shifts, not frame errors.</strong> The per-token error is at chance
+      (0.47–0.53). Averaging the same error over time per frequency row lifts it to 0.64–0.67.</p></div>
+    <div class="card take"><b>2</b><p><strong>Best learned model so far on ToyCar</strong> (Ω 0.667), still below kNN (0.720).
+      Scoring it the Flow Mismatching way (Chen et al., 2026) gives the same 0.669.</p></div>
+    <div class="card take"><b>3</b><p><strong>The far microphone adds almost nothing.</strong> v3 scores 0.658 without the far
+      context, against 0.667 with it.</p></div>
+  </div>
+</section>
 </main>
 <footer><div class="wrap">DCASE 2026 Task 2 development set, near-minus-far audio. Official score Ω = harmonic mean of source AUC, target AUC and
-  pAUC (FPR ≤ 0.1). Script: <code>tools/multi_machine.py --machine &lt;m&gt; --name "&lt;name&gt;"</code>.</div></footer>
+  pAUC (FPR ≤ 0.1). Scripts: <code>tools/multi_machine.py --machine &lt;m&gt; --name "&lt;name&gt;"</code>;
+  <code>tools/axial_flow.py --mode noise2near --natural 1 --target_frac 0.25</code>.</div></footer>
 <script>
 (function () {
   const root = document.documentElement, btn = document.getElementById("theme");
